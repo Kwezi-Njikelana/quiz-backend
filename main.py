@@ -5,10 +5,7 @@ import models
 from database import SessionLocal, engine
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
-from anthropic import Anthropic
 import json
-
-client = Anthropic()
 
 app = FastAPI(root_path="/api")
 
@@ -44,7 +41,6 @@ def get_db():
                 db.close()
 
 db_dependency = Annotated[Session, Depends(get_db)]
-
 
 
 @app.get("/questions")
@@ -110,32 +106,3 @@ async def delete_question(question_id: int, db: db_dependency):
         db.delete(db_question)
         db.commit()
 
-@app.post("/questions/generate")
-async def generate_questions(request: GenerateQuestionsRequest, db: db_dependency):
-        prompt = f""" Generate {request.count} multiple choice questions about {request.topic}".
-
-Return ONLY a JSON array, no explanation, no markdown. Each object must have:
-- "question_text": string
-- "choices": array of exactly 4 objects, each with:
-  - "choice_text": string
-  - "is_correct": boolean (exactly one must be true)
-
-Example format:
-[
-  {{
-    "question_text": "What is ...?",
-    "choices": [
-      {{"choice_text": "Answer A", "is_correct": true}},
-      {{"choice_text": "Answer B", "is_correct": false}},
-      {{"choice_text": "Answer C", "is_correct": false}},
-      {{"choice_text": "Answer D", "is_correct": false}}
-    ]
-  }}
-]"""
-        message = client.messages.create(
-        model="claude-opus-4-5",
-        max_tokens=2048,
-        messages=[{"role": "user", "content": prompt}]
-    )
-        
-        
